@@ -10,6 +10,7 @@ export default function Home() {
   const [stores, setStores] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [user, setUser] = useState<any>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     // Get user from localStorage
@@ -27,9 +28,11 @@ export default function Home() {
       .catch(() => setStores([])); // ✅ fallback
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (loggingOut) return; // Prevent double logout
+    setLoggingOut(true);
     localStorage.removeItem("user");
-    router.push("/login");
+    await router.push("/login");
   };
 
   const filtered = stores.filter((s) =>
@@ -51,9 +54,10 @@ export default function Home() {
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition font-semibold"
+                  disabled={loggingOut}
+                  className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition font-semibold"
                 >
-                  <LogOut size={18} /> Logout
+                  <LogOut size={18} /> {loggingOut ? "Logging out..." : "Logout"}
                 </button>
               </>
             )}
