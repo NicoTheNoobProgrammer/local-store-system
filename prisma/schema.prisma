@@ -58,7 +58,7 @@ model Product {
   id       Int     @id @default(autoincrement())
   name     String
   price    Float
-  image    String  @db.LongText  // 🖼 image support - LONGTEXT for large base64 images (up to 4GB)
+  image    String  @db.Text  // 🖼 image support - text for large base64 images
 
   storeId  Int
   store    Store   @relation(fields: [storeId], references: [id])
@@ -166,7 +166,7 @@ model ConversationMessage {
   sessionId String
   userId    Int
   role      String   // "user" or "assistant"
-  content   String   @db.LongText  // Support long responses
+  content   String   @db.Text  // Support long responses
   context   Json?    // Store metadata about intent, type, etc.
   timestamp DateTime @default(now())
 
