@@ -11,31 +11,46 @@ export default function SignupPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("USER");
+  const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {
-    const res = await fetch("/api/signup", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, username, password, role }),
-    });
-
-    const data = await res.json();
-
-    if (data.error) {
-      alert(data.error);
+    if (!email || !password || !username) {
+      alert("Please fill all fields");
       return;
     }
 
-    // Save user to localStorage
-    localStorage.setItem("user", JSON.stringify(data));
+    setLoading(true);
 
-    // Redirect based on role
-    if (role === "SELLER") {
-      router.push("/dashboard");
-    } else {
-      router.push("/");
+    try {
+      const res = await fetch("/api/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, username, password, role }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Signup failed");
+        return;
+      }
+
+      const data = await res.json();
+
+      // Save user to localStorage
+      localStorage.setItem("user", JSON.stringify(data));
+
+      // Redirect based on role
+      if (role === "SELLER") {
+        router.push("/dashboard");
+      } else {
+        router.push("/");
+      }
+    } catch (error) {
+      alert("Error: " + (error instanceof Error ? error.message : "Network error"));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -83,9 +98,10 @@ export default function SignupPage() {
 
             <button
               onClick={handleSignup}
-              className="w-full bg-gradient-to-r from-green-600 to-emerald-500 text-white py-3 rounded-lg hover:from-green-700 hover:to-emerald-600 transition font-semibold shadow-lg mt-6"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-green-600 to-emerald-500 text-white py-3 rounded-lg hover:from-green-700 hover:to-emerald-600 transition font-semibold shadow-lg mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Create Account
+              {loading ? "Creating Account..." : "Create Account"}
             </button>
           </div>
 
