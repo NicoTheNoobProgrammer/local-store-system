@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optional clean styling */
+body {
+  font-family: Arial, sans-serif;
+}
