@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 export default function UserGreeting() {
   const [user, setUser] = useState<any>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -15,28 +16,24 @@ export default function UserGreeting() {
   }, []);
 
   const handleLogout = async () => {
+    if (loggingOut) return; // Prevent double logout
+    setLoggingOut(true);
+    
     // Immediately clear UI (remove username and role from display)
     setUser(null);
     
     try {
       // Call logout API to clear server-side cookie
-      const response = await fetch("/api/logout", { method: "POST" });
-      
-      if (response.ok) {
-        // Clear local storage
-        localStorage.removeItem("user");
-        
-        // Small delay to ensure cookie is cleared server-side
-        setTimeout(() => {
-          router.push("/login");
-        }, 100);
-      }
+      await fetch("/api/logout", { method: "POST" });
     } catch (error) {
       console.error("Logout error:", error);
-      // Redirect anyway even if API call fails
-      localStorage.removeItem("user");
-      router.push("/login");
     }
+    
+    // Clear local storage
+    localStorage.removeItem("user");
+    
+    // Redirect to login
+    router.push("/login");
   };
 
   if (!user) return null;
@@ -53,9 +50,10 @@ export default function UserGreeting() {
       </div>
       <button
         onClick={handleLogout}
-        className="ml-2 px-3 py-1 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition font-medium"
+        disabled={loggingOut}
+        className="ml-2 px-3 py-1 text-sm bg-red-500 hover:bg-red-600 disabled:bg-red-400 disabled:cursor-not-allowed text-white rounded-lg transition font-medium"
       >
-        Logout
+        {loggingOut ? "Logging out..." : "Logout"}
       </button>
     </div>
   );

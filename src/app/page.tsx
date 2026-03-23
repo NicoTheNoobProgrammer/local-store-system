@@ -3,22 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MapPin, ShoppingCart, Store, LogOut } from "lucide-react";
+import { MapPin, ShoppingCart, Store } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
   const [stores, setStores] = useState<any[]>([]);
   const [search, setSearch] = useState("");
-  const [user, setUser] = useState<any>(null);
-  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
-    // Get user from localStorage
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-
     fetch("/api/stores")
       .then(async (res) => {
         if (!res.ok) return []; // ✅ prevent crash
@@ -28,49 +20,13 @@ export default function Home() {
       .catch(() => setStores([])); // ✅ fallback
   }, []);
 
-  const handleLogout = async () => {
-    if (loggingOut) return; // Prevent double logout
-    setLoggingOut(true);
-    localStorage.removeItem("user");
-    await router.push("/login");
-  };
-
   const filtered = stores.filter((s) =>
     s.name.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
-      {/* HEADER with Logout */}
-      <div className="bg-white dark:bg-gray-800 shadow-md p-4 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">🏪 Local Store System</h1>
-          <div className="flex items-center gap-4">
-            {user && (
-              <>
-                <div className="text-right">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Logged in as</p>
-                  <p className="font-semibold text-gray-800 dark:text-white">{user.email}</p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  disabled={loggingOut}
-                  className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition font-semibold"
-                >
-                  <LogOut size={18} /> {loggingOut ? "Logging out..." : "Logout"}
-                </button>
-              </>
-            )}
-            {!user && (
-              <Link href="/login">
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition font-semibold">
-                  Login
-                </button>
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
+
 
       {/* HERO */}
       <div className="bg-gradient-to-r from-green-600 via-emerald-500 to-blue-600 text-white p-12 rounded-3xl mb-10 shadow-2xl mx-4 mt-4">

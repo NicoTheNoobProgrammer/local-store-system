@@ -51,15 +51,12 @@ export default function LoginPage() {
       // ✅ Save session (client side)
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Wait a moment for localStorage to sync before redirecting
-      await new Promise(resolve => setTimeout(resolve, 100));
-
+      // Redirect immediately (router.push doesn't return a resolvable Promise)
       if (role === "SELLER") {
-        await router.push("/dashboard");
+        router.push("/dashboard");
       } else {
-        await router.push("/");
+        router.push("/");
       }
-      return; // Ensure function exits after redirect
     } catch (error) {
       console.error("Login error:", error);
       alert("Error: " + (error instanceof Error ? error.message : "Network error"));
