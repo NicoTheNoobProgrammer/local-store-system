@@ -10,36 +10,56 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("USER");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json", // ✅ FIX
-      },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
-
-    if (!data.user) {
-      alert(data.error || "Invalid credentials");
+    if (!email || !password) {
+      alert("Please fill all fields");
       return;
     }
 
-    // 🔥 Role check
-    if (data.user.role !== role) {
-      alert("Wrong role selected");
-      return;
-    }
+    setLoading(true);
 
-    // ✅ Save session (client side)
-    localStorage.setItem("user", JSON.stringify(data.user));
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (role === "SELLER") {
-      router.push("/dashboard");
-    } else {
-      router.push("/");
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Login failed");
+        return;
+      }
+
+      const data = await res.json();
+
+      if (!data.user) {
+        alert(data.error || "Invalid credentials");
+        return;
+      }
+
+      // 🔥 Role check
+      if (data.user.role !== role) {
+        alert("Wrong role selected");
+        return;
+      }
+
+      // ✅ Save session (client side)
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      if (role === "SELLER") {
+        router.push("/dashboard");
+      } else {
+        router.push("/");
+      }
+    } catch (error) {
+      alert("Error: " + (error instanceof Error ? error.message : "Network error"));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -77,9 +97,10 @@ export default function LoginPage() {
 
             <button
               onClick={handleLogin}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-3 rounded-lg hover:from-blue-700 hover:to-blue-600 transition font-semibold shadow-lg mt-6"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-3 rounded-lg hover:from-blue-700 hover:to-blue-600 transition font-semibold shadow-lg mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign In
+              {loading ? "Signing In..." : "Sign In"}
             </button>
           </div>
 
