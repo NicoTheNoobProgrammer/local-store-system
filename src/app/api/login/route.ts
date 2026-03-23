@@ -17,28 +17,36 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing fields" });
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
 
-  if (!user) {
-    return NextResponse.json({ error: "User not found" });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 401 });
+    }
+
+    if (user.password !== password) {
+      return NextResponse.json({ error: "Wrong password" }, { status: 401 });
+    }
+
+    const response = NextResponse.json({
+      success: true,
+      user,
+    });
+
+    // ✅ Set cookie
+    response.cookies.set("userId", String(user.id), {
+      httpOnly: true,
+      path: "/",
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Login error:", error);
+    return NextResponse.json(
+      { error: "Database error: " + (error instanceof Error ? error.message : "Unknown") },
+      { status: 500 }
+    );
   }
-
-  if (user.password !== password) {
-    return NextResponse.json({ error: "Wrong password" });
-  }
-
-  const response = NextResponse.json({
-    success: true,
-    user, // ✅ IMPORTANT
-  });
-
-  // ✅ Set cookie
-  response.cookies.set("userId", String(user.id), {
-    httpOnly: true,
-    path: "/",
-  });
-
-  return response;
 }
