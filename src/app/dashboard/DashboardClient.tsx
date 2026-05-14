@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ImageInput from "@/components/ImageInput";
+import StoreMapSelector from "@/components/StoreMapSelector";
 
 export default function DashboardClient() {
   const router = useRouter();
@@ -10,6 +11,8 @@ export default function DashboardClient() {
   const [data, setData] = useState<any>(null);
   const [productImage, setProductImage] = useState("");
   const [storeIndex, setStoreIndex] = useState(0);
+  const [selectedLatitude, setSelectedLatitude] = useState<number | null>(null);
+  const [selectedLongitude, setSelectedLongitude] = useState<number | null>(null);
 
   const fetchData = () => {
     fetch("/api/dashboard")
@@ -97,14 +100,19 @@ export default function DashboardClient() {
             e.preventDefault();
             const form = e.target as any;
 
+            if (selectedLatitude === null || selectedLongitude === null) {
+              alert("❌ Please select a location on the map");
+              return;
+            }
+
             const res = await fetch("/api/stores", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 name: form.name.value,
                 category: form.category.value,
-                latitude: Number(form.latitude.value),
-                longitude: Number(form.longitude.value),
+                latitude: selectedLatitude,
+                longitude: selectedLongitude,
               }),
             });
 
@@ -114,16 +122,39 @@ export default function DashboardClient() {
             } else {
               alert("✅ Store created successfully!");
               form.reset();
+              setSelectedLatitude(null);
+              setSelectedLongitude(null);
               fetchData(); // Refresh after successful creation
             }
           }}
         >
           <input name="name" placeholder="Store Name" className="border p-2 w-full mb-2" required />
           <input name="category" placeholder="Category" className="border p-2 w-full mb-2" required />
-          <input name="latitude" placeholder="Latitude" className="border p-2 w-full mb-2" type="number" step="any" required />
-          <input name="longitude" placeholder="Longitude" className="border p-2 w-full mb-2" type="number" step="any" required />
+          
+          {/* 🗺️ MAP SELECTOR */}
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              📍 Select Store Location on Map
+            </label>
+            <StoreMapSelector
+              onLocationSelect={(lat, lng) => {
+                setSelectedLatitude(lat);
+                setSelectedLongitude(lng);
+              }}
+            />
+          </div>
 
-          <button className="bg-blue-600 text-white px-4 py-2 rounded w-full">
+          {/* Display selected coordinates */}
+          {selectedLatitude !== null && selectedLongitude !== null && (
+            <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border-l-4 border-green-500">
+              <p className="text-sm font-semibold text-green-700 dark:text-green-300">✅ Location Selected</p>
+              <p className="text-xs text-green-600 dark:text-green-400">
+                Lat: {selectedLatitude.toFixed(6)}, Lng: {selectedLongitude.toFixed(6)}
+              </p>
+            </div>
+          )}
+
+          <button className="bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700 transition">
             Create Store
           </button>
         </form>
