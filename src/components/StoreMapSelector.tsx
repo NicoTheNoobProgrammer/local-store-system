@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import L from "leaflet";
 
 interface StoreMapSelectorProps {
   onLocationSelect: (latitude: number, longitude: number) => void;
@@ -9,124 +8,122 @@ interface StoreMapSelectorProps {
   longitude?: number;
 }
 
-export default function StoreMapSelector({
+// Map component that initializes leaflet on client side only
+function MapComponent({
   onLocationSelect,
   latitude,
   longitude,
 }: StoreMapSelectorProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<L.Map | null>(null);
-  const markerRef = useRef<L.Marker | null>(null);
+  const map = useRef<any>(null);
+  const markerRef = useRef<any>(null);
   const [selectedCoords, setSelectedCoords] = useState<{
     lat: number;
     lng: number;
   } | null>(latitude && longitude ? { lat: latitude, lng: longitude } : null);
-  const [isClient, setIsClient] = useState(false);
 
-  // Load Leaflet CSS dynamically
   useEffect(() => {
-    if (!document.querySelector('link[href*="leaflet"]')) {
+    // Load Leaflet CSS dynamically
+    if (typeof document !== "undefined" && !document.querySelector('link[href*="leaflet"]')) {
       const link = document.createElement("link");
       link.rel = "stylesheet";
       link.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
       document.head.appendChild(link);
     }
-    setIsClient(true);
   }, []);
 
   useEffect(() => {
-    if (!isClient || map.current) return;
-
+    if (map.current) return;
     if (!mapContainer.current) return;
+    if (typeof window === "undefined") return;
 
-    // Default to center of Philippines
-    const defaultLat = latitude || 12.8797;
-    const defaultLng = longitude || 121.774;
+    // Dynamically import leaflet only on client
+    import("leaflet").then((L) => {
+      // Default to center of Philippines
+      const defaultLat = latitude || 12.8797;
+      const defaultLng = longitude || 121.774;
 
-    // Initialize map
-    map.current = L.map(mapContainer.current).setView(
-      [defaultLat, defaultLng],
-      13
-    );
+      // Initialize map
+      map.current = L.map(mapContainer.current!).setView(
+        [defaultLat, defaultLng],
+        13
+      );
 
-    // Add OpenStreetMap tiles
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19,
-    }).addTo(map.current);
-
-    // Fix icon issues with leaflet
-    const defaultIcon = L.icon({
-      iconUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-      shadowUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41],
-    });
-
-    // Add initial marker if coordinates exist
-    if (latitude && longitude) {
-      markerRef.current = L.marker([latitude, longitude], {
-        icon: defaultIcon,
-        draggable: true,
+      // Add OpenStreetMap tiles
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
       }).addTo(map.current);
 
-      markerRef.current.on("dragend", () => {
-        const pos = markerRef.current?.getLatLng();
-        if (pos) {
-          setSelectedCoords({ lat: pos.lat, lng: pos.lng });
-          onLocationSelect(pos.lat, pos.lng);
-        }
+      // Fix icon issues with leaflet
+      const defaultIcon = L.icon({
+        iconUrl:
+          "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+        shadowUrl:
+          "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41],
       });
-    }
 
-    // Handle map clicks
-    const handleMapClick = (e: L.LeafletMouseEvent) => {
-      const { lat, lng } = e.latlng;
+      // Add initial marker if coordinates exist
+      if (latitude && longitude) {
+        markerRef.current = L.marker([latitude, longitude], {
+          icon: defaultIcon,
+          draggable: true,
+        }).addTo(map.current);
 
-      // Remove old marker
-      if (markerRef.current) {
-        map.current?.removeLayer(markerRef.current);
+        markerRef.current.on("dragend", () => {
+          const pos = markerRef.current?.getLatLng();
+          if (pos) {
+            setSelectedCoords({ lat: pos.lat, lng: pos.lng });
+            onLocationSelect(pos.lat, pos.lng);
+          }
+        });
       }
 
-      // Add new marker
-      markerRef.current = L.marker([lat, lng], {
-        icon: defaultIcon,
-        draggable: true,
-      }).addTo(map.current!);
+      // Handle map clicks
+      const handleMapClick = (e: any) => {
+        const { lat, lng } = e.latlng;
 
-      // Make marker draggable
-      markerRef.current.on("dragend", () => {
-        const pos = markerRef.current?.getLatLng();
-        if (pos) {
-          setSelectedCoords({ lat: pos.lat, lng: pos.lng });
-          onLocationSelect(pos.lat, pos.lng);
+        // Remove old marker
+        if (markerRef.current) {
+          map.current?.removeLayer(markerRef.current);
         }
-      });
 
-      setSelectedCoords({ lat, lng });
-      onLocationSelect(lat, lng);
-    };
+        // Add new marker
+        markerRef.current = L.marker([lat, lng], {
+          icon: defaultIcon,
+          draggable: true,
+        }).addTo(map.current!);
 
-    if (map.current) {
-      map.current.on("click", handleMapClick);
-    }
+        // Make marker draggable
+        markerRef.current.on("dragend", () => {
+          const pos = markerRef.current?.getLatLng();
+          if (pos) {
+            setSelectedCoords({ lat: pos.lat, lng: pos.lng });
+            onLocationSelect(pos.lat, pos.lng);
+          }
+        });
 
-    // Cleanup
+        setSelectedCoords({ lat, lng });
+        onLocationSelect(lat, lng);
+      };
+
+      if (map.current) {
+        map.current.on("click", handleMapClick);
+      }
+    });
+
     return () => {
       if (map.current) {
-        map.current.off("click", handleMapClick);
+        map.current.remove();
+        map.current = null;
       }
     };
-  }, [isClient, latitude, longitude]);
-
-  if (!isClient) {
-    return <div className="w-full h-96 bg-gray-200 rounded-lg animate-pulse" />;
-  }
+  }, [latitude, longitude]);
 
   return (
     <div className="w-full space-y-3">
@@ -152,4 +149,18 @@ export default function StoreMapSelector({
       )}
     </div>
   );
+}
+
+export default function StoreMapSelector(props: StoreMapSelectorProps) {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return <div className="w-full h-96 bg-gray-200 rounded-lg animate-pulse" />;
+  }
+
+  return <MapComponent {...props} />;
 }
